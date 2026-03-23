@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
+import timerRoutes from './routes/timer.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/timer', timerRoutes);
 app.use(errorHandler);
 
 app.listen(port, () => {
