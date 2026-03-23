@@ -12,7 +12,10 @@ async function request(path, options = {}) {
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(payload.error || 'Request failed.');
+    const error = new Error(payload.error || 'Request failed.');
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
   }
 
   return payload;
@@ -30,6 +33,22 @@ window.api = {
     return request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
+    });
+  },
+
+  refresh(refreshToken) {
+    return request('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken })
+    });
+  },
+
+  logout(accessToken) {
+    return request('/auth/logout', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
     });
   },
 

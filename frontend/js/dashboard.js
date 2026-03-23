@@ -2,7 +2,7 @@
 // Dashboard Page Handler
 // ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Require authentication to access dashboard
     if (!requireAuth()) {
         return;
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupLogoutButton();
 
     // Load user data
-    loadUserData();
+    await loadUserData();
 });
 
 /**
@@ -30,17 +30,20 @@ function setupLogoutButton() {
 /**
  * Load and display user data
  */
-function loadUserData() {
-    const user = auth.getCurrentUser();
+async function loadUserData() {
+    const cachedUser = auth.getCurrentUser();
+    const user = cachedUser || (await auth.fetchCurrentProfile());
     
     if (user) {
         // Display user's display name
         const displayNameElement = document.getElementById('user-display-name');
         if (displayNameElement) {
-            displayNameElement.textContent = user.displayName || user.email;
+            displayNameElement.textContent = user.displayName || user.display_name || user.email;
         }
 
         // Here you would load stats from localStorage or backend
         // For now, we'll just show placeholder values
+    } else {
+        window.location.href = 'login.html';
     }
 }

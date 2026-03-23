@@ -28,7 +28,7 @@ function setupRegisterForm() {
 /**
  * Handle registration form submission
  */
-function handleRegister() {
+async function handleRegister() {
     const displayName = document.getElementById('display-name').value.trim();
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -59,13 +59,21 @@ function handleRegister() {
     }
 
     // Attempt registration
-    const result = auth.register(email, password, displayName);
+    const result = await auth.register(email, password, displayName);
 
     if (result.success) {
-        showSuccessMessage('Account created successfully! Redirecting to login...');
+        if (result.requiresEmailConfirmation) {
+            showSuccessMessage('Account created. Check your email to verify your account, then sign in.');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2200);
+            return;
+        }
+
+        showSuccessMessage('Account created successfully! Redirecting to dashboard...');
         setTimeout(() => {
-            window.location.href = 'login.html';
-        }, 1500);
+            window.location.href = 'dashboard.html';
+        }, 1200);
     } else {
         showErrorMessage(result.error);
     }

@@ -1,27 +1,18 @@
 // ============================================
-// Authentication Module with localStorage
+// Authentication Module with Supabase Backend API
 // ============================================
 
 class AuthManager {
     constructor() {
+        this.sessionKey = 'pomodoro_session';
         this.userKey = 'pomodoro_user';
-        this.tokenKey = 'pomodoro_token';
-        this.usersKey = 'pomodoro_all_users';
         this.rememberMeKey = 'pomodoro_remember_email';
     }
 
-    /**
-     * Register a new user
-     * @param {string} email - User email
-     * @param {string} password - User password
-     * @param {string} displayName - User display name
-     * @returns {Object} - User object or error
-     */
-    register(email, password, displayName) {
+    async register(email, password, displayName) {
         try {
             const normalizedEmail = this.normalizeEmail(email);
 
-            // Validate inputs
             if (!this.validateEmail(normalizedEmail)) {
                 throw new Error('Invalid email format');
             }
@@ -31,32 +22,26 @@ class AuthManager {
             if (!displayName || displayName.trim().length === 0) {
                 throw new Error('Display name is required');
             }
-
-            // Check if user already exists
-            if (this.userExists(normalizedEmail)) {
-                throw new Error('User already exists with this email');
+            if (!window.api) {
+                throw new Error('API client not loaded.');
             }
 
-            // Create user object
-            const user = {
-                id: this.generateUserId(),
+            const result = await window.api.signup({
                 email: normalizedEmail,
-                displayName: displayName.trim(),
-                password: this.hashPassword(password),
-                createdAt: new Date().toISOString(),
-                lastLogin: null
-            };
+                password,
+                displayName: displayName.trim()
+            });
 
-            // Get all users from localStorage
-            const allUsers = this.getAllUsers();
-            allUsers.push(user);
-            this.safeSetItem(localStorage, this.usersKey, allUsers);
+            if (result.session && result.user) {
+                this.storeSession(result.session, result.user, false);
+            }
 
-            // Return user (without password)
-            const { password: _, ...userWithoutPassword } = user;
             return {
                 success: true,
-                user: userWithoutPassword
+                message: result.message,
+                requiresEmailConfirmation: !!result.requiresEmailConfirmation,
+                user: result.user || null,
+                session: result.session || null
             };
         } catch (error) {
             return {
@@ -66,57 +51,24 @@ class AuthManager {
         }
     }
 
-    /**
-     * Login user with email and password
-     * @param {string} email - User email
-     * @param {string} password - User password
-     * @param {boolean} rememberMe - Save email for next login
-     * @returns {Object} - Login result
-     */
-    login(email, password, rememberMe = false) {
+    async login(email, password, rememberMe = false) {
         try {
             const normalizedEmail = this.normalizeEmail(email);
 
             if (!normalizedEmail || !password) {
                 throw new Error('Email and password are required');
             }
-
-            const user = this.findUserByEmail(normalizedEmail);
-            if (!user) {
-                throw new Error('User not found');
+            if (!window.api) {
+                throw new Error('API client not loaded.');
             }
 
-            // Verify password
-            if (!this.verifyPassword(password, user.password)) {
-                throw new Error('Invalid password');
-            }
+            const result = await window.api.login({
+                email: normalizedEmail,
+                password
+            });
 
-            // Create token
-            const token = this.generateToken(user.id);
+            this.storeSession(result.session, result.user, rememberMe);
 
-            // Update last login
-            const allUsers = this.getAllUsers();
-            const userIndex = allUsers.findIndex(u => u.id === user.id);
-            if (userIndex !== -1) {
-                allUsers[userIndex].lastLogin = new Date().toISOString();
-                this.safeSetItem(localStorage, this.usersKey, allUsers);
-            }
-
-            const sessionStore = rememberMe ? localStorage : sessionStorage;
-            const otherStore = rememberMe ? sessionStorage : localStorage;
-            const sessionUser = {
-                id: user.id,
-                email: user.email,
-                displayName: user.displayName,
-                createdAt: user.createdAt
-            };
-
-            // Store current user session in the chosen browser storage.
-            this.clearSession(otherStore);
-            this.safeSetItem(sessionStore, this.userKey, sessionUser);
-            sessionStore.setItem(this.tokenKey, token);
-
-            // Remember email if checked
             if (rememberMe) {
                 localStorage.setItem(this.rememberMeKey, normalizedEmail);
             } else {
@@ -125,12 +77,8 @@ class AuthManager {
 
             return {
                 success: true,
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    displayName: user.displayName
-                },
-                token: token
+                user: result.user,
+                session: result.session
             };
         } catch (error) {
             return {
@@ -140,196 +88,182 @@ class AuthManager {
         }
     }
 
-    /**
-     * Logout user
-     * @returns {boolean} - True if logout successful
-     */
-    logout() {
-        this.clearSession(localStorage);
-        this.clearSession(sessionStorage);
+    async logout() {
+        const session = this.getSession();
+
+        try {
+            if (session?.access_token && window.api) {
+                await window.api.logout(session.access_token);
+            }
+        } catch (_error) {
+            // Client-side cleanup still logs out the user even if backend token revocation fails.
+        } finally {
+            this.clearSession(localStorage);
+            this.clearSession(sessionStorage);
+        }
+
         return true;
     }
 
-    /**
-     * Get current logged-in user
-     * @returns {Object|null} - Current user or null
-     */
     getCurrentUser() {
         return this.getSessionValue(this.userKey);
     }
 
-    /**
-     * Get auth token
-     * @returns {string|null} - Auth token or null
-     */
+    getSession() {
+        return this.getSessionValue(this.sessionKey);
+    }
+
     getToken() {
-        return this.getSessionValue(this.tokenKey, false);
+        const session = this.getSession();
+        return session?.access_token || null;
     }
 
-    /**
-     * Check if user is authenticated
-     * @returns {boolean} - True if user is logged in
-     */
     isAuthenticated() {
-        const user = this.getCurrentUser();
         const token = this.getToken();
-        return user !== null && token !== null;
+        const user = this.getCurrentUser();
+        return !!token && !!user;
     }
 
-    /**
-     * Get remembered email
-     * @returns {string|null} - Remembered email or null
-     */
     getRememberedEmail() {
         return localStorage.getItem(this.rememberMeKey);
     }
 
-    /**
-     * Check whether the current page is an auth page.
-     */
     isAuthPage() {
         const path = window.location.pathname;
         return path.endsWith('/login.html') || path.endsWith('/register.html') || path === '/login.html' || path === '/register.html';
     }
 
-    // ============================================
-    // Private Helper Methods
-    // ============================================
+    async fetchCurrentProfile() {
+        const token = this.getToken();
+        if (!token || !window.api) {
+            return null;
+        }
 
-    /**
-     * Validate email format
-     */
+        let response;
+        try {
+            response = await window.api.me(token);
+        } catch (error) {
+            if (error.status === 401) {
+                const refreshed = await this.refreshSession();
+                if (!refreshed) {
+                    return null;
+                }
+
+                response = await window.api.me(this.getToken());
+            } else {
+                throw error;
+            }
+        }
+
+        const profile = response.user || null;
+        if (profile) {
+            this.storeUserProfile(profile);
+        }
+
+        return profile;
+    }
+
+    async refreshSession() {
+        const session = this.getSession();
+        const refreshToken = session?.refresh_token;
+
+        if (!refreshToken || !window.api) {
+            await this.logout();
+            return false;
+        }
+
+        try {
+            const refreshed = await window.api.refresh(refreshToken);
+            this.updateStoredSession(refreshed.session, refreshed.user);
+            return true;
+        } catch (_error) {
+            await this.logout();
+            return false;
+        }
+    }
+
     validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     }
 
-    /**
-     * Normalize email values for consistent matching.
-     */
     normalizeEmail(email) {
         return typeof email === 'string' ? email.trim().toLowerCase() : '';
     }
 
-    /**
-     * Simple hash function (NOT production-ready)
-     * For production, use bcrypt on the backend
-     */
-    hashPassword(password) {
-        let hash = 0;
-        for (let i = 0; i < password.length; i++) {
-            const char = password.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
+    storeSession(session, user, rememberMe) {
+        const storage = rememberMe ? localStorage : sessionStorage;
+        const otherStorage = rememberMe ? sessionStorage : localStorage;
+
+        this.clearSession(otherStorage);
+        storage.setItem(this.sessionKey, JSON.stringify(session));
+        storage.setItem(this.userKey, JSON.stringify(this.shapeUser(user)));
+    }
+
+    updateStoredSession(session, user) {
+        const storage = this.getSessionStorage();
+        storage.setItem(this.sessionKey, JSON.stringify(session));
+        storage.setItem(this.userKey, JSON.stringify(this.shapeUser(user)));
+    }
+
+    storeUserProfile(profile) {
+        const user = {
+            id: profile.id,
+            email: profile.email,
+            displayName: profile.display_name || profile.email,
+            createdAt: profile.created_at || null
+        };
+
+        if (sessionStorage.getItem(this.userKey)) {
+            sessionStorage.setItem(this.userKey, JSON.stringify(user));
+        } else if (localStorage.getItem(this.userKey)) {
+            localStorage.setItem(this.userKey, JSON.stringify(user));
         }
-        return 'hash_' + Math.abs(hash).toString(16);
     }
 
-    /**
-     * Verify password against hash
-     */
-    verifyPassword(password, hash) {
-        return this.hashPassword(password) === hash;
+    shapeUser(user) {
+        return {
+            id: user.id,
+            email: user.email,
+            displayName: user.user_metadata?.display_name || user.display_name || user.email,
+            createdAt: user.created_at || null
+        };
     }
 
-    /**
-     * Generate unique user ID
-     */
-    generateUserId() {
-        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-            return window.crypto.randomUUID();
-        }
-
-        return 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
-    }
-
-    /**
-     * Generate auth token
-     */
-    generateToken(userId) {
-        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
-            const values = new Uint32Array(2);
-            window.crypto.getRandomValues(values);
-            return 'token_' + userId + '_' + values[0].toString(36) + values[1].toString(36);
-        }
-
-        return 'token_' + userId + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
-    }
-
-    /**
-     * Check if user exists by email
-     */
-    userExists(email) {
-        return this.findUserByEmail(email) !== null;
-    }
-
-    /**
-     * Find user by email
-     */
-    findUserByEmail(email) {
-        const allUsers = this.getAllUsers();
-        const normalizedEmail = this.normalizeEmail(email);
-        return allUsers.find(user => user.email === normalizedEmail) || null;
-    }
-
-    /**
-     * Get all users from localStorage
-     */
-    getAllUsers() {
-        const users = this.safeReadJson(localStorage, this.usersKey, []);
-        return Array.isArray(users) ? users : [];
-    }
-
-    /**
-     * Read session value from sessionStorage first, then localStorage.
-     */
-    getSessionValue(key, parseJson = true) {
-        const fromSession = this.readFromStore(sessionStorage, key, parseJson);
+    getSessionValue(key) {
+        const fromSession = this.readJson(sessionStorage, key);
         if (fromSession !== null) {
             return fromSession;
         }
 
-        return this.readFromStore(localStorage, key, parseJson);
+        return this.readJson(localStorage, key);
     }
 
-    /**
-     * Read a single value from a storage object.
-     */
-    readFromStore(store, key, parseJson = true) {
+    getSessionStorage() {
+        if (sessionStorage.getItem(this.sessionKey)) {
+            return sessionStorage;
+        }
+
+        if (localStorage.getItem(this.sessionKey)) {
+            return localStorage;
+        }
+
+        return sessionStorage;
+    }
+
+    readJson(store, key) {
         try {
             const value = store.getItem(key);
-            if (value === null) {
-                return null;
-            }
-
-            return parseJson ? JSON.parse(value) : value;
-        } catch (error) {
+            return value ? JSON.parse(value) : null;
+        } catch (_error) {
             store.removeItem(key);
             return null;
         }
     }
 
-    /**
-     * Safely read JSON from browser storage.
-     */
-    safeReadJson(store, key, fallbackValue) {
-        const value = this.readFromStore(store, key, true);
-        return value === null ? fallbackValue : value;
-    }
-
-    /**
-     * Safely write JSON to browser storage.
-     */
-    safeSetItem(store, key, value) {
-        store.setItem(key, JSON.stringify(value));
-    }
-
-    /**
-     * Clear auth session from a specific browser store.
-     */
     clearSession(store) {
+        store.removeItem(this.sessionKey);
         store.removeItem(this.userKey);
-        store.removeItem(this.tokenKey);
     }
 }
 
@@ -349,7 +283,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setupForgotPasswordButton();
 
-    // Only redirect away from login/register pages.
     if (auth.isAuthenticated() && auth.isAuthPage()) {
         redirectToDashboard();
     }
@@ -387,14 +320,14 @@ function setupForgotPasswordButton() {
     }
 
     forgotPasswordButton.addEventListener('click', function() {
-        showErrorMessage('Forgot password will be connected when Supabase auth is added.');
+        showErrorMessage('Forgot password is not implemented yet.');
     });
 }
 
 /**
  * Handle login form submission
  */
-function handleLogin() {
+async function handleLogin() {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const rememberMe = document.getElementById('remember-me').checked;
@@ -403,7 +336,7 @@ function handleLogin() {
     clearMessages();
 
     // Attempt login
-    const result = auth.login(email, password, rememberMe);
+    const result = await auth.login(email, password, rememberMe);
 
     if (result.success) {
         showSuccessMessage('Login successful! Redirecting...');
@@ -419,10 +352,9 @@ function handleLogin() {
  * Handle logout
  */
 function handleLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        auth.logout();
+    auth.logout().finally(() => {
         window.location.href = 'login.html';
-    }
+    });
 }
 
 /**

@@ -106,6 +106,39 @@ router.post('/login', asyncHandler(async (req, res) => {
   });
 }));
 
+router.post('/refresh', asyncHandler(async (req, res) => {
+  const refreshToken = typeof req.body.refreshToken === 'string'
+    ? req.body.refreshToken.trim()
+    : '';
+
+  if (!refreshToken) {
+    return res.status(400).json({ error: 'Refresh token is required.' });
+  }
+
+  const supabaseAuthClient = createSupabaseAuthClient();
+  const { data, error } = await supabaseAuthClient.auth.refreshSession({
+    refresh_token: refreshToken
+  });
+
+  if (error || !data.session || !data.user) {
+    return res.status(401).json({ error: error?.message || 'Unable to refresh session.' });
+  }
+
+  return res.status(200).json({
+    message: 'Session refreshed.',
+    user: data.user,
+    session: data.session
+  });
+}));
+
+router.post('/logout', requireAuth, asyncHandler(async (req, res) => {
+  // Signing out can fail if no refresh token is present; clearing client session still logs out the user.
+  const supabaseUserClient = createSupabaseUserClient(req.accessToken);
+  await supabaseUserClient.auth.signOut();
+
+  return res.status(200).json({ message: 'Logout successful.' });
+}));
+
 router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   const supabaseUserClient = createSupabaseUserClient(req.accessToken);
   const { data, error } = await supabaseUserClient

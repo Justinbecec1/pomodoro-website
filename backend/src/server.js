@@ -8,9 +8,25 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://127.0.0.1:5500';
+const frontendOrigins = (
+  process.env.FRONTEND_ORIGINS
+  || process.env.FRONTEND_ORIGIN
+  || 'http://127.0.0.1:5500,http://localhost:5500'
+)
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-app.use(cors({ origin: frontendOrigin, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || frontendOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (_req, res) => {
