@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <h1 class="navbar-brand">Pomodoro Timer</h1>
+            <div class="navbar-menu">
+                <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="timer.html" class="nav-link">Timer</a>
+                <a href="tasks.html" class="nav-link">Tasks</a>
+                <a href="progress.html" class="nav-link">Progress</a>
+                <a href="settings.html" class="nav-link">Settings</a>
+                <button id="logout-button" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Welcome, <span id="user-display-name">User</span>!</h1>
+            <p>Here's your overview. Let's get productive today!</p>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Quick Stats -->
+            <div class="stat-card">
+                <div class="stat-content">
+                    <h3>Today's Pomodoros</h3>
+                    <p class="stat-number">0</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-content">
+                    <h3>Time Worked</h3>
+                    <p class="stat-number">0 min</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-content">
+                    <h3>Tasks Completed</h3>
+                    <p class="stat-number">0</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-content">
+                    <h3>Current Streak</h3>
+                    <p class="stat-number">0 days</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Features Section -->
+        <div class="features-section">
+            <div class="feature-card">
+                <h2>Start Timer</h2>
+                <p>Begin your work session or break</p>
+                <a href="timer.html" class="btn btn-primary">Go to Timer</a>
+            </div>
+
+            <div class="feature-card">
+                <h2>Manage Tasks</h2>
+                <p>Create and track your tasks</p>
+                <a href="tasks.html" class="btn btn-primary">Manage Tasks</a>
+            </div>
+
+            <div class="feature-card">
+                <h2>View Progress</h2>
+                <p>Track your productivity stats</p>
+                <a href="progress.html" class="btn btn-primary">View Progress</a>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="quick-links">
+            <h2>Quick Links</h2>
+            <ul>
+                <li><a href="timer.html">Start Working</a></li>
+                <li><a href="tasks.html">Add New Task</a></li>
+                <li><a href="settings.html">Change Settings</a></li>
+                <li><a href="progress.html">Weekly Stats</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
