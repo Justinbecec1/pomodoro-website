@@ -18,6 +18,29 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function resolveDisplayName(user, fallbackEmail) {
+  const fromMetadata = user?.user_metadata?.display_name;
+  if (typeof fromMetadata === 'string' && fromMetadata.trim()) {
+    return fromMetadata.trim();
+  }
+
+  return normalizeDisplayName(fallbackEmail) || fallbackEmail;
+}
+
+async function ensureProfileRow(user, fallbackDisplayName) {
+  if (!user?.id) {
+    return;
+  }
+
+  await supabaseAdminClient
+    .from('profiles')
+    .upsert({
+      id: user.id,
+      email: normalizeEmail(user.email),
+      display_name: normalizeDisplayName(fallbackDisplayName) || resolveDisplayName(user, user.email)
+    });
+}
+
 router.post('/signup', asyncHandler(async (req, res) => {
   const email = normalizeEmail(req.body.email);
   const password = typeof req.body.password === 'string' ? req.body.password : '';
@@ -61,7 +84,8 @@ router.post('/signup', asyncHandler(async (req, res) => {
       });
 
     if (profileError) {
-      return res.status(500).json({ error: profileError.message });
+      // Some providers can delay auth.users replication; profile can be healed on login/me.
+      console.warn('Profile upsert failed during signup:', profileError.message);
     }
   }
 
@@ -98,6 +122,12 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   if (error) {
     return res.status(401).json({ error: error.message });
+  }
+
+  try {
+    await ensureProfileRow(data.user, resolveDisplayName(data.user, email));
+  } catch (profileError) {
+    console.warn('Profile upsert failed during login:', profileError.message);
   }
 
   const { error: timerResetError } = await supabaseAdminClient
@@ -160,10 +190,30 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
     .from('profiles')
     .select('id, email, display_name, created_at')
     .eq('id', req.user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     return res.status(500).json({ error: error.message });
+  }
+
+  if (!data) {
+    try {
+      await ensureProfileRow(req.user, resolveDisplayName(req.user, req.user.email));
+    } catch (profileError) {
+      return res.status(500).json({ error: profileError.message });
+    }
+
+    const { data: recoveredData, error: recoveredError } = await supabaseUserClient
+      .from('profiles')
+      .select('id, email, display_name, created_at')
+      .eq('id', req.user.id)
+      .maybeSingle();
+
+    if (recoveredError || !recoveredData) {
+      return res.status(500).json({ error: recoveredError?.message || 'Unable to load profile.' });
+    }
+
+    return res.status(200).json({ user: recoveredData });
   }
 
   return res.status(200).json({ user: data });
