@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
 const DEFAULT_WORK_SECONDS = 1500;
+const DEFAULT_BREAK_SECONDS = 300;
 const MAX_TIMER_SECONDS = 86400;
 const VALID_MODES = new Set(['work', 'break']);
 
@@ -220,6 +221,48 @@ router.put('/', requireAuth, asyncHandler(async (req, res) => {
   return res.status(200).json(toTimerResponse(payload));
 }));
 
+router.post('/complete-work', requireAuth, asyncHandler(async (req, res) => {
+  const workedSeconds = parseLastWorkSeconds(req.body.workedSeconds);
+
+  if (workedSeconds === null) {
+    return res.status(400).json({ error: 'workedSeconds must be an integer between 1 and 86400.' });
+  }
+
+  const supabaseUserClient = createSupabaseUserClient(req.accessToken);
+  const { data, error } = await supabaseUserClient
+    .from('timer_state')
+    .select('*')
+    .eq('user_id', req.user.id)
+    .maybeSingle();
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  let state = normalizeState(data, req.user.id);
+  state = resetStatsForNewDay(state).state;
+  const incrementSeconds = workedSeconds || state.last_work_seconds || DEFAULT_WORK_SECONDS;
+
+  const payload = {
+    ...state,
+    current_mode: 'break',
+    remaining_seconds: DEFAULT_BREAK_SECONDS,
+    time_worked_seconds: state.time_worked_seconds + incrementSeconds,
+    last_work_seconds: incrementSeconds,
+    updated_at: new Date().toISOString()
+  };
+
+  const { error: upsertError } = await supabaseUserClient
+    .from('timer_state')
+    .upsert(payload, { onConflict: 'user_id' });
+
+  if (upsertError) {
+    return res.status(500).json({ error: upsertError.message });
+  }
+
+  return res.status(200).json(toTimerResponse(payload));
+}));
+
 router.post('/complete-break', requireAuth, asyncHandler(async (req, res) => {
   const workedSeconds = parseLastWorkSeconds(req.body.workedSeconds);
 
@@ -247,7 +290,7 @@ router.post('/complete-break', requireAuth, asyncHandler(async (req, res) => {
     current_mode: 'work',
     remaining_seconds: DEFAULT_WORK_SECONDS,
     todays_pomodoros: state.todays_pomodoros + 1,
-    time_worked_seconds: state.time_worked_seconds + incrementSeconds,
+    time_worked_seconds: state.time_worked_seconds,
     last_work_seconds: DEFAULT_WORK_SECONDS,
     updated_at: new Date().toISOString()
   };
