@@ -51,6 +51,8 @@ async function loadUserData() {
 
 async function loadDashboardStats() {
     const pomodorosElement = document.getElementById('todays-pomodoros-stat');
+    const tasksCompletedElement = document.getElementById('tasks-completed-stat');
+    const currentStreakElement = document.getElementById('current-streak-stat');
     const token = auth.getToken();
 
     if (!pomodorosElement || !token || !window.api) {
@@ -58,10 +60,29 @@ async function loadDashboardStats() {
     }
 
     try {
-        const timer = await window.api.getTimer(token);
+        const [timer, progressSummary, streakData] = await Promise.all([
+            window.api.getTimer(token),
+            window.api.getProgressSummary(token, 'week'),
+            typeof window.api.getCurrentStreak === 'function'
+                ? window.api.getCurrentStreak(token)
+                : Promise.resolve({ currentStreakDays: 0 })
+        ]);
+
         const todaysPomodoros = Number.isInteger(timer?.todaysPomodoros) ? timer.todaysPomodoros : 0;
+        const tasksCompleted = Number.isInteger(progressSummary?.tasksCompleted)
+            ? progressSummary.tasksCompleted
+            : 0;
+        const currentStreakDays = Number.isInteger(streakData?.currentStreakDays)
+            ? streakData.currentStreakDays
+            : 0;
 
         pomodorosElement.textContent = String(todaysPomodoros);
+        if (tasksCompletedElement) {
+            tasksCompletedElement.textContent = String(tasksCompleted);
+        }
+        if (currentStreakElement) {
+            currentStreakElement.textContent = `${currentStreakDays} days`;
+        }
     } catch (error) {
         if (error && error.status === 401) {
             await auth.logout();
@@ -73,6 +94,12 @@ async function loadDashboardStats() {
         const todaysPomodoros = Number.isInteger(cached?.todaysPomodoros) ? cached.todaysPomodoros : 0;
 
         pomodorosElement.textContent = String(todaysPomodoros);
+        if (tasksCompletedElement) {
+            tasksCompletedElement.textContent = '0';
+        }
+        if (currentStreakElement) {
+            currentStreakElement.textContent = '0 days';
+        }
     }
 }
 

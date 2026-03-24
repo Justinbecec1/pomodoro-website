@@ -30,6 +30,33 @@ function getSinceDateIso(days) {
   return since.toISOString().slice(0, 10);
 }
 
+function previousDateIso(isoDate) {
+  const date = new Date(`${isoDate}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function calculateCurrentStreak(activityDates) {
+  const dateSet = new Set(activityDates || []);
+  if (dateSet.size === 0) {
+    return 0;
+  }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const yesterdayIso = previousDateIso(todayIso);
+
+  // Start from today if there is activity, otherwise allow the streak to continue from yesterday.
+  let cursor = dateSet.has(todayIso) ? todayIso : yesterdayIso;
+  let streak = 0;
+
+  while (dateSet.has(cursor)) {
+    streak += 1;
+    cursor = previousDateIso(cursor);
+  }
+
+  return streak;
+}
+
 router.post('/track', requireAuth, asyncHandler(async (req, res) => {
   const secondsRaw = Number.parseInt(req.body.seconds, 10);
   const seconds = Number.isInteger(secondsRaw) ? Math.max(5, Math.min(secondsRaw, 300)) : 30;
@@ -134,6 +161,26 @@ router.get('/completed-count', requireAuth, asyncHandler(async (req, res) => {
   }
 
   return res.status(200).json({ range, tasksCompleted: (data || []).length });
+}));
+
+router.get('/streak', requireAuth, asyncHandler(async (req, res) => {
+  const supabaseUserClient = createSupabaseUserClient(req.accessToken);
+  const { data, error } = await supabaseUserClient
+    .from('activity_daily')
+    .select('activity_date, seconds_spent')
+    .eq('user_id', req.user.id)
+    .gt('seconds_spent', 0);
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  const uniqueDates = Array.from(
+    new Set((data || []).map((row) => row.activity_date).filter(Boolean))
+  );
+  const currentStreakDays = calculateCurrentStreak(uniqueDates);
+
+  return res.status(200).json({ currentStreakDays });
 }));
 
 router.post('/notes', requireAuth, asyncHandler(async (req, res) => {

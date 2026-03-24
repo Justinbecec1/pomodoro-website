@@ -192,6 +192,15 @@ window.api = {
     });
   },
 
+  getCurrentStreak(accessToken) {
+    return request('/progress/streak', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+  },
+
   saveProgressNote(accessToken, range, content) {
     return request('/progress/notes', {
       method: 'POST',
