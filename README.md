@@ -11,7 +11,7 @@ This is a pomodoro focused timer built app, it allows users to make an account a
 ## Technologies Used
 - Frontend: HTML, CSS, Javascript
 - Backend: Node.js, Express
-- Database: Firebase
+- Database: Supabase
 
 ## Setup instructions
 
