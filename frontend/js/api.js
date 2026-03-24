@@ -59,5 +59,44 @@ window.api = {
         Authorization: `Bearer ${accessToken}`
       }
     });
+  },
+
+  getTimer(accessToken) {
+    return request('/timer', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+  },
+
+  updateTimer(accessToken, remainingSeconds, currentMode, lastWorkSeconds) {
+    return request('/timer', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ remainingSeconds, currentMode, lastWorkSeconds })
+    });
+  },
+
+  completeWork(accessToken, workedSeconds) {
+    return request('/timer/complete-work', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ workedSeconds })
+    });
+  },
+
+  completeBreak(accessToken, workedSeconds) {
+    return request('/timer/complete-break', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ workedSeconds })
+    });
   }
 };

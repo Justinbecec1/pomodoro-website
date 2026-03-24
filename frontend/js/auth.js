@@ -7,6 +7,7 @@ class AuthManager {
         this.sessionKey = 'pomodoro_session';
         this.userKey = 'pomodoro_user';
         this.rememberMeKey = 'pomodoro_remember_email';
+        this.timerCacheKeyPrefix = 'pomodoro_timer_state_cache';
     }
 
     async register(email, password, displayName) {
@@ -100,6 +101,7 @@ class AuthManager {
         } finally {
             this.clearSession(localStorage);
             this.clearSession(sessionStorage);
+            this.clearLegacyTimerCache();
         }
 
         return true;
@@ -264,6 +266,21 @@ class AuthManager {
     clearSession(store) {
         store.removeItem(this.sessionKey);
         store.removeItem(this.userKey);
+    }
+
+    clearLegacyTimerCache() {
+        const keysToRemove = [];
+
+        for (let i = 0; i < localStorage.length; i += 1) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(this.timerCacheKeyPrefix)) {
+                keysToRemove.push(key);
+            }
+        }
+
+        keysToRemove.forEach((key) => {
+            localStorage.removeItem(key);
+        });
     }
 }
 

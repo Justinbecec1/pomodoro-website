@@ -110,6 +110,34 @@ body {
     padding: 40px 20px;
 }
 
+.nav-main-container {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+}
+
+.nav-main-container > * {
+    width: min(100%, 1100px);
+}
+
+.nav-main-container .dashboard-header,
+.nav-main-container .feature-card,
+.nav-main-container .about-section,
+.nav-main-container .timer-panel,
+.nav-main-container .tab-card {
+    text-align: center;
+}
+
+.nav-main-container .dashboard-header h1,
+.nav-main-container .dashboard-header p,
+.nav-main-container .about-section h2,
+.nav-main-container .about-section p {
+    text-align: center;
+}
+
 /* Dashboard Header */
 .dashboard-header {
     margin-bottom: 40px;
@@ -222,50 +250,26 @@ body {
     align-self: flex-start;
 }
 
-/* Quick Links */
-.quick-links {
+/* About */
+.about-section {
     background-color: white;
     border-radius: 16px;
     padding: 32px;
     box-shadow: 0 16px 32px rgba(122, 162, 201, 0.08);
     border: 1px solid rgba(125, 186, 247, 0.18);
+    max-width: 760px;
 }
 
-.quick-links h2 {
+.about-section h2 {
     font-size: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     color: var(--text-primary);
-    text-align: left;
 }
 
-.quick-links ul {
-    list-style: none;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-}
-
-.quick-links li {
-    padding: 12px;
-    background-color: var(--primary-soft);
-    border-radius: 8px;
-    transition: var(--transition);
-}
-
-.quick-links li:hover {
-    background-color: rgba(125, 186, 247, 0.24);
-}
-
-.quick-links a {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: 600;
-    display: block;
-    transition: var(--transition);
-}
-
-.quick-links a:hover {
-    color: #3f87d0;
+.about-section p {
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 18px;
 }
 
 /* Buttons */
@@ -319,6 +323,11 @@ body {
 
     .container {
         padding: 20px;
+    }
+
+    .nav-main-container {
+        min-height: auto;
+        justify-content: flex-start;
     }
 
     .dashboard-grid,

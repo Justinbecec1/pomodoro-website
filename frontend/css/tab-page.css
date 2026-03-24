@@ -1,0 +1,19 @@
+.tab-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 255, 0.98));
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 40px;
+    box-shadow: 0 16px 32px rgba(122, 162, 201, 0.08);
+    border: 1px solid rgba(125, 186, 247, 0.18);
+}
+
+.tab-card h2 {
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.tab-card p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+}

@@ -2,6 +2,8 @@
 // Dashboard Page Handler
 // ============================================
 
+const TIMER_CACHE_KEY_PREFIX = 'pomodoro_timer_state_cache';
+
 document.addEventListener('DOMContentLoaded', async function() {
     // Require authentication to access dashboard
     if (!requireAuth()) {
@@ -41,9 +43,55 @@ async function loadUserData() {
             displayNameElement.textContent = user.displayName || user.display_name || user.email;
         }
 
-        // Here you would load stats from localStorage or backend
-        // For now, we'll just show placeholder values
+        await loadDashboardStats();
     } else {
         window.location.href = 'login.html';
     }
 }
+
+async function loadDashboardStats() {
+    const pomodorosElement = document.getElementById('todays-pomodoros-stat');
+    const token = auth.getToken();
+
+    if (!pomodorosElement || !token || !window.api) {
+        return;
+    }
+
+    try {
+        const timer = await window.api.getTimer(token);
+        const todaysPomodoros = Number.isInteger(timer?.todaysPomodoros) ? timer.todaysPomodoros : 0;
+
+        pomodorosElement.textContent = String(todaysPomodoros);
+    } catch (error) {
+        if (error && error.status === 401) {
+            await auth.logout();
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const cached = readTimerCache();
+        const todaysPomodoros = Number.isInteger(cached?.todaysPomodoros) ? cached.todaysPomodoros : 0;
+
+        pomodorosElement.textContent = String(todaysPomodoros);
+    }
+}
+
+function readTimerCache() {
+    const userId = auth.getCurrentUser()?.id;
+    const scopedKey = userId ? `${TIMER_CACHE_KEY_PREFIX}_${userId}` : TIMER_CACHE_KEY_PREFIX;
+
+    try {
+        const scopedRaw = localStorage.getItem(scopedKey);
+        if (scopedRaw) {
+            return JSON.parse(scopedRaw);
+        }
+
+        const legacyRaw = localStorage.getItem(TIMER_CACHE_KEY_PREFIX);
+        return legacyRaw ? JSON.parse(legacyRaw) : null;
+    } catch (_error) {
+        localStorage.removeItem(scopedKey);
+        localStorage.removeItem(TIMER_CACHE_KEY_PREFIX);
+        return null;
+    }
+}
+
