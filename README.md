@@ -15,7 +15,30 @@ This is a pomodoro focused timer built app, it allows users to make an account a
 
 ## Setup instructions
 
+Non local setup: Open site: pomodoro-websitee.netlify.app
 
+local setup:
+
+1. Download Zip
+
+2. Open the repo and npm install
+
+3. cd to the backend and npm install
+
+4. create env file with these values
+
+PORT=3000
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_AVATAR_BUCKET=avatars
+FRONTEND_ORIGINS=http://127.0.0.1:5500,http://localhost:5500
+
+5. run the schema.sql from the project inside the sql editor in supabase
+
+6. npm run dev
+
+7. open http://127.0.0.1:5500/login.html
 
 ## Bugs or Limitations
 
