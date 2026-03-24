@@ -42,5 +42,14 @@ export function createSupabaseUserClient(accessToken) {
   });
 }
 
-assertSupabaseEnv();
-export const supabaseAdminClient = createClient(supabaseUrl, supabaseServiceRoleKey, baseAuthOptions);
+let supabaseAdminClient;
+
+export function getSupabaseAdminClient() {
+  assertSupabaseEnv();
+
+  if (!supabaseAdminClient) {
+    supabaseAdminClient = createClient(supabaseUrl, supabaseServiceRoleKey, baseAuthOptions);
+  }
+
+  return supabaseAdminClient;
+}

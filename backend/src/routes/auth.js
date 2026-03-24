@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createSupabaseAuthClient, createSupabaseUserClient, supabaseAdminClient } from '../config/supabase.js';
+import { createSupabaseAuthClient, createSupabaseUserClient, getSupabaseAdminClient } from '../config/supabase.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
@@ -24,7 +24,7 @@ async function createAvatarSignedUrl(path) {
     return null;
   }
 
-  const { data, error } = await supabaseAdminClient.storage
+  const { data, error } = await getSupabaseAdminClient().storage
     .from(AVATAR_BUCKET)
     .createSignedUrl(path, 60 * 60);
 
@@ -61,7 +61,7 @@ async function ensureProfileRow(user, fallbackDisplayName) {
     return;
   }
 
-  await supabaseAdminClient
+  await getSupabaseAdminClient()
     .from('profiles')
     .upsert({
       id: user.id,
@@ -104,7 +104,7 @@ router.post('/signup', asyncHandler(async (req, res) => {
   }
 
   if (data.user) {
-    const { error: profileError } = await supabaseAdminClient
+    const { error: profileError } = await getSupabaseAdminClient()
       .from('profiles')
       .upsert({
         id: data.user.id,
@@ -227,7 +227,7 @@ router.post('/reset-password', requireAuth, asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 6 characters.' });
   }
 
-  const { data, error } = await supabaseAdminClient.auth.admin.updateUserById(req.user.id, {
+  const { data, error } = await getSupabaseAdminClient().auth.admin.updateUserById(req.user.id, {
     password
   });
 
@@ -278,7 +278,7 @@ router.post('/avatar', requireAuth, asyncHandler(async (req, res) => {
   const extension = safeName.includes('.') ? safeName.split('.').pop() : 'png';
   const objectPath = `${req.user.id}/avatar.${extension}`;
 
-  const { error: uploadError } = await supabaseAdminClient.storage
+  const { error: uploadError } = await getSupabaseAdminClient().storage
     .from(AVATAR_BUCKET)
     .upload(objectPath, binary, {
       contentType: mimeType,
@@ -297,7 +297,7 @@ router.post('/avatar', requireAuth, asyncHandler(async (req, res) => {
   }
 
   const avatarUpdatedAt = new Date().toISOString();
-  const { error: profileError } = await supabaseAdminClient
+  const { error: profileError } = await getSupabaseAdminClient()
     .from('profiles')
     .update({
       avatar_path: objectPath,
@@ -320,7 +320,7 @@ router.post('/avatar', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 router.get('/avatar-url', requireAuth, asyncHandler(async (req, res) => {
-  const { data, error } = await supabaseAdminClient
+  const { data, error } = await getSupabaseAdminClient()
     .from('profiles')
     .select('avatar_path')
     .eq('id', req.user.id)
