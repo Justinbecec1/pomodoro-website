@@ -2,8 +2,14 @@
   "name": "pomodoro-website",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "postinstall": "npm --prefix backend install",
-    "start": "npm --prefix backend start"
+    "start": "node backend/src/server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.100.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
   }
 }
