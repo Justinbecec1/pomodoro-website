@@ -49,8 +49,12 @@ function parseLastWorkSeconds(value) {
   }
 
   const parsed = normalizeSeconds(value);
-  if (parsed === null || parsed === 0) {
+  if (parsed === null) {
     return null;
+  }
+
+  if (parsed === 0) {
+    return undefined;
   }
 
   return parsed;
@@ -283,8 +287,6 @@ router.post('/complete-break', requireAuth, asyncHandler(async (req, res) => {
 
   let state = normalizeState(data, req.user.id);
   state = resetStatsForNewDay(state).state;
-  const incrementSeconds = workedSeconds || state.last_work_seconds || DEFAULT_WORK_SECONDS;
-
   const payload = {
     ...state,
     current_mode: 'work',

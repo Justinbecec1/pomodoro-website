@@ -17,5 +17,6 @@ This is a pomodoro focused timer built app, it allows users to make an account a
 
 ## Bugs or Limitations
 
-- There are some inconsistencies with the data timer regarding the speed of it loading.
+- There are some inconsistencies with the data timer nothing I did fixed it.
 - Timer cant be written directly when you click on it
+

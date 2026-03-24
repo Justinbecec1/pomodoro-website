@@ -4,7 +4,6 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
-const DEFAULT_TIMER_SECONDS = 1500;
 
 function normalizeEmail(email) {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -128,20 +127,6 @@ router.post('/login', asyncHandler(async (req, res) => {
     await ensureProfileRow(data.user, resolveDisplayName(data.user, email));
   } catch (profileError) {
     console.warn('Profile upsert failed during login:', profileError.message);
-  }
-
-  const { error: timerResetError } = await supabaseAdminClient
-    .from('timer_state')
-    .upsert({
-      user_id: data.user.id,
-      remaining_seconds: DEFAULT_TIMER_SECONDS,
-      current_mode: 'work',
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
-
-  if (timerResetError) {
-    // Timer reset is non-critical; do not block authentication if schema isn't updated yet.
-    console.warn('Timer reset failed during login:', timerResetError.message);
   }
 
   return res.status(200).json({

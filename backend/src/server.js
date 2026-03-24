@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
+import tasksRoutes from './routes/tasks.js';
 import timerRoutes from './routes/timer.js';
 
 dotenv.config();
@@ -18,9 +19,11 @@ const frontendOrigins = (
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(\:\d+)?$/i;
+
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || frontendOrigins.includes(origin)) {
+    if (!origin || frontendOrigins.includes(origin) || localDevOriginPattern.test(origin)) {
       return callback(null, true);
     }
 
@@ -36,6 +39,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/timer', timerRoutes);
+app.use('/api/tasks', tasksRoutes);
 app.use(errorHandler);
 
 app.listen(port, () => {

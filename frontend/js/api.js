@@ -98,5 +98,43 @@ window.api = {
       },
       body: JSON.stringify({ workedSeconds })
     });
+  },
+
+  getTasks(accessToken) {
+    return request('/tasks', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+  },
+
+  createTask(accessToken, title) {
+    return request('/tasks', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ title })
+    });
+  },
+
+  updateTask(accessToken, taskId, updates) {
+    return request(`/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(updates)
+    });
+  },
+
+  deleteTask(accessToken, taskId) {
+    return request(`/tasks/${taskId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
   }
 };
