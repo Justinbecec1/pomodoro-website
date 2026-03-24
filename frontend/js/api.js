@@ -160,5 +160,35 @@ window.api = {
         Authorization: `Bearer ${accessToken}`
       }
     });
+  },
+
+  getProgressSummary(accessToken, range) {
+    const query = range ? `?range=${encodeURIComponent(range)}` : '';
+    return request(`/progress/summary${query}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+  },
+
+  saveProgressNote(accessToken, range, content) {
+    return request('/progress/notes', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ range, content })
+    });
+  },
+
+  trackProgress(accessToken, seconds) {
+    return request('/progress/track', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ seconds })
+    });
   }
 };

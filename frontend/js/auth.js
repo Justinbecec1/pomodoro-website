@@ -300,10 +300,52 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setupForgotPasswordButton();
 
+    if (auth.isAuthenticated() && !auth.isAuthPage()) {
+        setupActivityTracking();
+    }
+
     if (auth.isAuthenticated() && auth.isAuthPage()) {
         redirectToDashboard();
     }
 });
+
+function setupActivityTracking() {
+    if (window.__pomodoroActivityTrackerStarted) {
+        return;
+    }
+
+    window.__pomodoroActivityTrackerStarted = true;
+
+    async function sendActivity(seconds) {
+        if (!window.api || typeof window.api.trackProgress !== 'function') {
+            return;
+        }
+
+        const token = auth.getToken();
+        if (!token) {
+            return;
+        }
+
+        try {
+            await window.api.trackProgress(token, seconds);
+        } catch (_error) {
+            // Ignore transient tracking failures so UX is unaffected.
+        }
+    }
+
+    const intervalMs = 30000;
+    window.setInterval(function() {
+        if (document.visibilityState === 'visible') {
+            sendActivity(30);
+        }
+    }, intervalMs);
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            sendActivity(10);
+        }
+    });
+}
 
 /**
  * Setup login form event listeners

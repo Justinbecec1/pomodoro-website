@@ -26,17 +26,45 @@
     <div class="container nav-main-container">
         <div class="dashboard-header">
             <h1>Progress</h1>
-            <p>Productivity insights live on this tab.</p>
+            <p>Track your completed tasks, time spent, and notes by range.</p>
         </div>
 
-        <div class="tab-card">
-            <h2>Progress Module</h2>
-            <p>This is the dedicated Progress tab. Add analytics and charts here moving forward.</p>
+        <div class="tab-card progress-card">
+            <h2>Range</h2>
+            <div class="progress-range-row" role="group" aria-label="Progress range">
+                <button class="btn btn-secondary progress-range-btn active" data-range="day" type="button">Past Day</button>
+                <button class="btn btn-secondary progress-range-btn" data-range="week" type="button">Past Week</button>
+                <button class="btn btn-secondary progress-range-btn" data-range="month" type="button">Past Month</button>
+            </div>
+
+            <div class="progress-stats-grid">
+                <div class="progress-stat-box">
+                    <p class="progress-stat-label">Tasks Completed</p>
+                    <p id="progress-tasks-completed" class="progress-stat-value">0</p>
+                </div>
+                <div class="progress-stat-box">
+                    <p class="progress-stat-label">Time Spent on Website</p>
+                    <p id="progress-time-spent" class="progress-stat-value">0m</p>
+                </div>
+            </div>
+
+            <p id="progress-since" class="progress-meta">Loading...</p>
+
+            <h2>Notes</h2>
+            <div class="progress-saved-shell" aria-label="Saved notes">
+                <ul id="progress-saved-list" class="progress-saved-list"></ul>
+            </div>
+            <p class="progress-note-hint">Notes are saved to database for the selected range.</p>
+            <textarea id="progress-note-input" class="progress-note-input" maxlength="4000" placeholder="Write notes for this period..."></textarea>
+            <div class="progress-note-actions">
+                <button id="progress-note-save" class="btn btn-primary" type="button">Save Note</button>
+                <p id="progress-note-status" class="progress-note-status" aria-live="polite"></p>
+            </div>
         </div>
     </div>
 
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/tab-page.js"></script>
+    <script src="js/api.js?v=20260324i"></script>
+    <script src="js/auth.js?v=20260324i"></script>
+    <script src="js/progress.js?v=20260324i"></script>
 </body>
 </html>
