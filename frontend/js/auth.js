@@ -400,7 +400,8 @@ function setupForgotPasswordButton() {
             return;
         }
 
-        const resetPageUrl = `${window.location.origin}/reset-password.html`;
+        // Netlify Drop serves this project with pages under /frontend.
+        const resetPageUrl = `${window.location.origin}/frontend/reset-password.html`;
 
         try {
             await window.api.forgotPassword({ email, redirectTo: resetPageUrl });
