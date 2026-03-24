@@ -1,4 +1,4 @@
-import { supabaseAdminClient } from '../config/supabase.js';
+import { getSupabaseAdminClient } from '../config/supabase.js';
 
 export async function requireAuth(req, res, next) {
   try {
@@ -9,7 +9,7 @@ export async function requireAuth(req, res, next) {
     }
 
     const accessToken = authHeader.slice(7);
-    const { data, error } = await supabaseAdminClient.auth.getUser(accessToken);
+    const { data, error } = await getSupabaseAdminClient().auth.getUser(accessToken);
 
     if (error || !data.user) {
       return res.status(401).json({ error: 'Invalid or expired token.' });
