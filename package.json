@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "cd backend && npm install && node src/server.js"
+    "postinstall": "npm --prefix backend install",
+    "start": "npm --prefix backend start"
   }
 }
