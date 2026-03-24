@@ -4,6 +4,36 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
+const AVATAR_BUCKET = process.env.SUPABASE_AVATAR_BUCKET || 'avatars';
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
+function decodeBase64(value) {
+  if (typeof value !== 'string' || !value.trim()) {
+    return null;
+  }
+
+  try {
+    return Buffer.from(value, 'base64');
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function createAvatarSignedUrl(path) {
+  if (!path) {
+    return null;
+  }
+
+  const { data, error } = await supabaseAdminClient.storage
+    .from(AVATAR_BUCKET)
+    .createSignedUrl(path, 60 * 60);
+
+  if (error) {
+    return null;
+  }
+
+  return data?.signedUrl || null;
+}
 
 function normalizeEmail(email) {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -222,11 +252,93 @@ router.post('/logout', requireAuth, asyncHandler(async (req, res) => {
   return res.status(200).json({ message: 'Logout successful.' });
 }));
 
+router.post('/avatar', requireAuth, asyncHandler(async (req, res) => {
+  const fileName = typeof req.body.fileName === 'string' ? req.body.fileName.trim() : '';
+  const mimeType = typeof req.body.mimeType === 'string' ? req.body.mimeType.trim() : '';
+  const dataBase64 = typeof req.body.dataBase64 === 'string' ? req.body.dataBase64.trim() : '';
+
+  if (!fileName || !mimeType || !dataBase64) {
+    return res.status(400).json({ error: 'fileName, mimeType, and dataBase64 are required.' });
+  }
+
+  if (!mimeType.startsWith('image/')) {
+    return res.status(400).json({ error: 'Only image uploads are allowed.' });
+  }
+
+  const binary = decodeBase64(dataBase64);
+  if (!binary) {
+    return res.status(400).json({ error: 'Invalid image payload.' });
+  }
+
+  if (binary.length > MAX_AVATAR_BYTES) {
+    return res.status(400).json({ error: 'Image must be 2MB or smaller.' });
+  }
+
+  const safeName = fileName.toLowerCase().replace(/[^a-z0-9_.-]/g, '-');
+  const extension = safeName.includes('.') ? safeName.split('.').pop() : 'png';
+  const objectPath = `${req.user.id}/avatar.${extension}`;
+
+  const { error: uploadError } = await supabaseAdminClient.storage
+    .from(AVATAR_BUCKET)
+    .upload(objectPath, binary, {
+      contentType: mimeType,
+      upsert: true
+    });
+
+  if (uploadError) {
+    const bucketMissing = /bucket.*not.*found/i.test(uploadError.message || '');
+    if (bucketMissing) {
+      return res.status(500).json({
+        error: `Storage bucket '${AVATAR_BUCKET}' not found. Create it in Supabase Storage or set SUPABASE_AVATAR_BUCKET to an existing bucket name.`
+      });
+    }
+
+    return res.status(500).json({ error: uploadError.message });
+  }
+
+  const avatarUpdatedAt = new Date().toISOString();
+  const { error: profileError } = await supabaseAdminClient
+    .from('profiles')
+    .update({
+      avatar_path: objectPath,
+      avatar_updated_at: avatarUpdatedAt
+    })
+    .eq('id', req.user.id);
+
+  if (profileError) {
+    return res.status(500).json({ error: profileError.message });
+  }
+
+  const avatarUrl = await createAvatarSignedUrl(objectPath);
+
+  return res.status(200).json({
+    message: 'Profile picture updated.',
+    avatarPath: objectPath,
+    avatarUrl,
+    avatarUpdatedAt
+  });
+}));
+
+router.get('/avatar-url', requireAuth, asyncHandler(async (req, res) => {
+  const { data, error } = await supabaseAdminClient
+    .from('profiles')
+    .select('avatar_path')
+    .eq('id', req.user.id)
+    .maybeSingle();
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  const avatarUrl = await createAvatarSignedUrl(data?.avatar_path || null);
+  return res.status(200).json({ avatarUrl, avatarPath: data?.avatar_path || null });
+}));
+
 router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   const supabaseUserClient = createSupabaseUserClient(req.accessToken);
   const { data, error } = await supabaseUserClient
     .from('profiles')
-    .select('id, email, display_name, created_at')
+    .select('id, email, display_name, avatar_path, avatar_updated_at, created_at')
     .eq('id', req.user.id)
     .maybeSingle();
 
@@ -243,7 +355,7 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
 
     const { data: recoveredData, error: recoveredError } = await supabaseUserClient
       .from('profiles')
-      .select('id, email, display_name, created_at')
+      .select('id, email, display_name, avatar_path, avatar_updated_at, created_at')
       .eq('id', req.user.id)
       .maybeSingle();
 
@@ -251,10 +363,22 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
       return res.status(500).json({ error: recoveredError?.message || 'Unable to load profile.' });
     }
 
-    return res.status(200).json({ user: recoveredData });
+    const recoveredAvatarUrl = await createAvatarSignedUrl(recoveredData.avatar_path);
+    return res.status(200).json({
+      user: {
+        ...recoveredData,
+        avatar_url: recoveredAvatarUrl
+      }
+    });
   }
 
-  return res.status(200).json({ user: data });
+  const avatarUrl = await createAvatarSignedUrl(data.avatar_path);
+  return res.status(200).json({
+    user: {
+      ...data,
+      avatar_url: avatarUrl
+    }
+  });
 }));
 
 export default router;

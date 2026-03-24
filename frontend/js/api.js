@@ -80,6 +80,25 @@ window.api = {
     });
   },
 
+  uploadAvatar(accessToken, payload) {
+    return request('/auth/avatar', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+  },
+
+  getAvatarUrl(accessToken) {
+    return request('/auth/avatar-url', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+  },
+
   getTimer(accessToken) {
     return request('/timer', {
       method: 'GET',
