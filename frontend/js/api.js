@@ -1,4 +1,4 @@
-const API_BASE_URL = window.APP_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = window.APP_API_BASE_URL || 'https://pomodoro-website-production-97d7.up.railway.app/api';
 
 async function request(path, options = {}) {
   const headers = {
