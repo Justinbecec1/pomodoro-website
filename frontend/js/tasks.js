@@ -1,5 +1,5 @@
 const MAX_VISIBLE_TASKS = 10;
-const TASKS_API_BASE_URL = window.APP_API_BASE_URL || 'http://localhost:3000/api';
+const TASKS_API_BASE_URL = window.APP_API_BASE_URL || 'https://pomodoro-website-production-97d7.up.railway.app/api';
 let editingTaskId = null;
 
 function formatDueInText(dueAt) {
