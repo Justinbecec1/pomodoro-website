@@ -327,17 +327,45 @@ function setupLoginForm() {
 }
 
 /**
- * Setup the placeholder forgot password button.
+ * Setup forgot password button on login page.
  */
 function setupForgotPasswordButton() {
     const forgotPasswordButton = document.querySelector('.forgot-password');
+    const emailInput = document.getElementById('email');
 
     if (!forgotPasswordButton) {
         return;
     }
 
-    forgotPasswordButton.addEventListener('click', function() {
-        showErrorMessage('Forgot password is not implemented yet.');
+    forgotPasswordButton.addEventListener('click', async function() {
+        clearMessages();
+
+        const defaultEmail = emailInput ? emailInput.value.trim() : '';
+        const providedEmail = window.prompt('Enter your email to receive a password reset link:', defaultEmail);
+
+        if (providedEmail === null) {
+            return;
+        }
+
+        const email = auth.normalizeEmail(providedEmail);
+        if (!auth.validateEmail(email)) {
+            showErrorMessage('Enter a valid email address.');
+            return;
+        }
+
+        if (!window.api || typeof window.api.forgotPassword !== 'function') {
+            showErrorMessage('Password reset is temporarily unavailable.');
+            return;
+        }
+
+        const resetPageUrl = `${window.location.origin}/reset-password.html`;
+
+        try {
+            await window.api.forgotPassword({ email, redirectTo: resetPageUrl });
+            showSuccessMessage('Password reset email sent. Check your inbox.');
+        } catch (error) {
+            showErrorMessage(error.message || 'Could not send reset email.');
+        }
     });
 }
 

@@ -89,9 +89,13 @@ create table if not exists public.tasks (
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
   completed boolean not null default false,
+  due_at timestamptz,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.tasks
+  add column if not exists due_at timestamptz;
 
 create index if not exists tasks_user_id_created_at_idx
   on public.tasks (user_id, created_at desc);
@@ -119,5 +123,78 @@ create policy "Users can update their own tasks"
 drop policy if exists "Users can delete their own tasks" on public.tasks;
 create policy "Users can delete their own tasks"
   on public.tasks
+  for delete
+  using (auth.uid() = user_id);
+
+create table if not exists public.activity_daily (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  activity_date date not null default current_date,
+  seconds_spent integer not null default 0 check (seconds_spent >= 0),
+  updated_at timestamptz not null default timezone('utc', now()),
+  primary key (user_id, activity_date)
+);
+
+create index if not exists activity_daily_user_date_idx
+  on public.activity_daily (user_id, activity_date desc);
+
+alter table public.activity_daily enable row level security;
+
+drop policy if exists "Users can view their own activity" on public.activity_daily;
+create policy "Users can view their own activity"
+  on public.activity_daily
+  for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert their own activity" on public.activity_daily;
+create policy "Users can insert their own activity"
+  on public.activity_daily
+  for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their own activity" on public.activity_daily;
+create policy "Users can update their own activity"
+  on public.activity_daily
+  for update
+  using (auth.uid() = user_id);
+
+create table if not exists public.progress_notes (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  range_key text not null,
+  content text not null default '',
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  primary key (user_id, range_key)
+);
+
+alter table public.progress_notes drop constraint if exists progress_notes_range_key_check;
+alter table public.progress_notes
+  add constraint progress_notes_range_key_check check (range_key in ('day', 'week', 'month'));
+
+create index if not exists progress_notes_user_updated_idx
+  on public.progress_notes (user_id, updated_at desc);
+
+alter table public.progress_notes enable row level security;
+
+drop policy if exists "Users can view their own progress notes" on public.progress_notes;
+create policy "Users can view their own progress notes"
+  on public.progress_notes
+  for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert their own progress notes" on public.progress_notes;
+create policy "Users can insert their own progress notes"
+  on public.progress_notes
+  for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their own progress notes" on public.progress_notes;
+create policy "Users can update their own progress notes"
+  on public.progress_notes
+  for update
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can delete their own progress notes" on public.progress_notes;
+create policy "Users can delete their own progress notes"
+  on public.progress_notes
   for delete
   using (auth.uid() = user_id);

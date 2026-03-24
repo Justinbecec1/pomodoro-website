@@ -32,8 +32,10 @@
         <div class="tab-card task-card">
             <h2>Task List</h2>
             <form id="task-form" class="task-form">
-                <input id="task-input" type="text" maxlength="140" placeholder="Add a new task..." required>
-                <button class="btn btn-primary" type="submit">Add Task</button>
+                <label class="task-input-label" for="task-input">Task Description</label>
+                <textarea id="task-input" name="description" maxlength="140" placeholder="Type your task description here..." rows="2" required autofocus></textarea>
+                <button id="task-submit-button" class="btn btn-primary" type="submit">Add Task</button>
+                <button id="task-cancel-edit" class="btn btn-secondary" type="button" hidden>Cancel</button>
             </form>
 
             <p id="task-status" class="task-status" aria-live="polite"></p>
@@ -44,8 +46,8 @@
         </div>
     </div>
 
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/tasks.js"></script>
+    <script src="js/api.js?v=20260324e"></script>
+    <script src="js/auth.js?v=20260324e"></script>
+    <script src="js/tasks.js?v=20260324e"></script>
 </body>
 </html>

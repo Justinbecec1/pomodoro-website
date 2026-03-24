@@ -6,15 +6,51 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 const router = Router();
 const MAX_TITLE_LENGTH = 140;
 
-function normalizeTitle(value) {
+function resolveDueAt(body) {
+  const dueAtInput = body?.dueAt ?? body?.due_at;
+
+  if (dueAtInput === undefined) {
+    return { provided: false, value: null, error: null };
+  }
+
+  if (dueAtInput === null) {
+    return { provided: true, value: null, error: null };
+  }
+
+  if (typeof dueAtInput !== 'string') {
+    return { provided: true, value: null, error: 'Due date must be a valid ISO datetime string or null.' };
+  }
+
+  const trimmed = dueAtInput.trim();
+  if (!trimmed) {
+    return { provided: true, value: null, error: null };
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return { provided: true, value: null, error: 'Due date is invalid.' };
+  }
+
+  return { provided: true, value: parsed.toISOString(), error: null };
+}
+
+function normalizeDescription(value) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function resolveDescription(body) {
+  const description = normalizeDescription(body?.description);
+  const title = normalizeDescription(body?.title);
+  return description || title;
 }
 
 function toTaskResponse(task) {
   return {
     id: task.id,
+    description: task.title,
     title: task.title,
     completed: task.completed,
+    dueAt: task.due_at,
     createdAt: task.created_at,
     updatedAt: task.updated_at
   };
@@ -24,7 +60,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const supabaseUserClient = createSupabaseUserClient(req.accessToken);
   const { data, error } = await supabaseUserClient
     .from('tasks')
-    .select('id, title, completed, created_at, updated_at')
+    .select('id, title, completed, due_at, created_at, updated_at')
     .eq('user_id', req.user.id)
     .order('created_at', { ascending: false });
 
@@ -36,14 +72,19 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 router.post('/', requireAuth, asyncHandler(async (req, res) => {
-  const title = normalizeTitle(req.body.title);
+  const description = resolveDescription(req.body);
+  const dueAt = resolveDueAt(req.body);
 
-  if (!title) {
-    return res.status(400).json({ error: 'Task title is required.' });
+  if (!description) {
+    return res.status(400).json({ error: 'Task description is required.' });
   }
 
-  if (title.length > MAX_TITLE_LENGTH) {
-    return res.status(400).json({ error: `Task title must be at most ${MAX_TITLE_LENGTH} characters.` });
+  if (dueAt.error) {
+    return res.status(400).json({ error: dueAt.error });
+  }
+
+  if (description.length > MAX_TITLE_LENGTH) {
+    return res.status(400).json({ error: `Task description must be at most ${MAX_TITLE_LENGTH} characters.` });
   }
 
   const supabaseUserClient = createSupabaseUserClient(req.accessToken);
@@ -51,11 +92,12 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     .from('tasks')
     .insert({
       user_id: req.user.id,
-      title,
+      title: description,
       completed: false,
+      due_at: dueAt.value,
       updated_at: new Date().toISOString()
     })
-    .select('id, title, completed, created_at, updated_at')
+    .select('id, title, completed, due_at, created_at, updated_at')
     .single();
 
   if (error) {
@@ -66,32 +108,42 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 router.put('/:taskId', requireAuth, asyncHandler(async (req, res) => {
-  const titleProvided = Object.prototype.hasOwnProperty.call(req.body, 'title');
+  const descriptionProvided = Object.prototype.hasOwnProperty.call(req.body, 'description')
+    || Object.prototype.hasOwnProperty.call(req.body, 'title');
   const completedProvided = Object.prototype.hasOwnProperty.call(req.body, 'completed');
+  const dueAt = resolveDueAt(req.body);
 
-  if (!titleProvided && !completedProvided) {
-    return res.status(400).json({ error: 'Provide title and/or completed to update.' });
+  if (!descriptionProvided && !completedProvided && !dueAt.provided) {
+    return res.status(400).json({ error: 'Provide description, completed, and/or dueAt to update.' });
+  }
+
+  if (dueAt.error) {
+    return res.status(400).json({ error: dueAt.error });
   }
 
   const updates = {
     updated_at: new Date().toISOString()
   };
 
-  if (titleProvided) {
-    const title = normalizeTitle(req.body.title);
-    if (!title) {
-      return res.status(400).json({ error: 'Task title cannot be empty.' });
+  if (descriptionProvided) {
+    const description = resolveDescription(req.body);
+    if (!description) {
+      return res.status(400).json({ error: 'Task description cannot be empty.' });
     }
 
-    if (title.length > MAX_TITLE_LENGTH) {
-      return res.status(400).json({ error: `Task title must be at most ${MAX_TITLE_LENGTH} characters.` });
+    if (description.length > MAX_TITLE_LENGTH) {
+      return res.status(400).json({ error: `Task description must be at most ${MAX_TITLE_LENGTH} characters.` });
     }
 
-    updates.title = title;
+    updates.title = description;
   }
 
   if (completedProvided) {
     updates.completed = Boolean(req.body.completed);
+  }
+
+  if (dueAt.provided) {
+    updates.due_at = dueAt.value;
   }
 
   const supabaseUserClient = createSupabaseUserClient(req.accessToken);
@@ -100,7 +152,7 @@ router.put('/:taskId', requireAuth, asyncHandler(async (req, res) => {
     .update(updates)
     .eq('id', req.params.taskId)
     .eq('user_id', req.user.id)
-    .select('id, title, completed, created_at, updated_at')
+    .select('id, title, completed, due_at, created_at, updated_at')
     .maybeSingle();
 
   if (error) {

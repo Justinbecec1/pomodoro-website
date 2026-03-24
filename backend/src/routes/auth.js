@@ -161,6 +161,59 @@ router.post('/refresh', asyncHandler(async (req, res) => {
   });
 }));
 
+router.post('/forgot-password', asyncHandler(async (req, res) => {
+  const email = normalizeEmail(req.body.email);
+  const redirectTo = typeof req.body.redirectTo === 'string' ? req.body.redirectTo.trim() : '';
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required.' });
+  }
+
+  if (!validateEmail(email)) {
+    return res.status(400).json({ error: 'Enter a valid email address.' });
+  }
+
+  const options = redirectTo ? { redirectTo } : undefined;
+  const supabaseAuthClient = createSupabaseAuthClient();
+  const { error } = await supabaseAuthClient.auth.resetPasswordForEmail(email, options);
+
+  if (error) {
+    return res.status(400).json({ error: error.message });
+  }
+
+  return res.status(200).json({
+    message: 'If that email exists, a password reset link has been sent.'
+  });
+}));
+
+router.post('/reset-password', requireAuth, asyncHandler(async (req, res) => {
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+
+  if (!password) {
+    return res.status(400).json({ error: 'Password is required.' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  }
+
+  const { data, error } = await supabaseAdminClient.auth.admin.updateUserById(req.user.id, {
+    password
+  });
+
+  if (error) {
+    return res.status(400).json({ error: error.message });
+  }
+
+  try {
+    await ensureProfileRow(data.user, resolveDisplayName(data.user, data.user?.email));
+  } catch (profileError) {
+    console.warn('Profile upsert failed during password reset:', profileError.message);
+  }
+
+  return res.status(200).json({ message: 'Password updated successfully.' });
+}));
+
 router.post('/logout', requireAuth, asyncHandler(async (req, res) => {
   // Signing out can fail if no refresh token is present; clearing client session still logs out the user.
   const supabaseUserClient = createSupabaseUserClient(req.accessToken);

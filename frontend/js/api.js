@@ -1,12 +1,14 @@
 const API_BASE_URL = window.APP_API_BASE_URL || 'http://localhost:3000/api';
 
 async function request(path, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    },
-    ...options
+    ...options,
+    headers
   });
 
   const payload = await response.json().catch(() => ({}));
@@ -33,6 +35,23 @@ window.api = {
     return request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
+    });
+  },
+
+  forgotPassword({ email, redirectTo }) {
+    return request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, redirectTo })
+    });
+  },
+
+  resetPassword(accessToken, password) {
+    return request('/auth/reset-password', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ password })
     });
   },
 
@@ -109,23 +128,28 @@ window.api = {
     });
   },
 
-  createTask(accessToken, title) {
+  createTask(accessToken, description) {
     return request('/tasks', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`
       },
-      body: JSON.stringify({ title })
+      body: JSON.stringify({ description, title: description })
     });
   },
 
   updateTask(accessToken, taskId, updates) {
+    const payload = { ...updates };
+    if (typeof payload.description === 'string' && !payload.title) {
+      payload.title = payload.description;
+    }
+
     return request(`/tasks/${taskId}`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${accessToken}`
       },
-      body: JSON.stringify(updates)
+      body: JSON.stringify(payload)
     });
   },
 
