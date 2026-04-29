@@ -353,12 +353,16 @@ function normalizeMode(mode) {
 
 function renderMode() {
     const modeLabel = document.getElementById('timer-mode-label');
-
-    if (!modeLabel) {
-        return;
+    if (modeLabel) {
+        modeLabel.textContent = currentMode === 'break' ? 'Break Session' : 'Work Session';
     }
 
-    modeLabel.textContent = currentMode === 'break' ? 'Break Session' : 'Work Session';
+    const workBtn = document.getElementById('timer-set-work');
+    const breakBtn = document.getElementById('timer-set-break');
+    if (workBtn && breakBtn) {
+        workBtn.classList.toggle('active', currentMode === 'work');
+        breakBtn.classList.toggle('active', currentMode === 'break');
+    }
 }
 
 function clampSeconds(value) {
@@ -387,12 +391,19 @@ function formatSeconds(seconds) {
 
 function renderTimer() {
     const display = document.getElementById('timer-display');
-
-    if (!display) {
-        return;
-    }
-
+    if (!display) return;
     display.textContent = formatSeconds(timerSeconds);
+
+    const ring = document.getElementById('timer-ring-progress');
+    if (ring) {
+        const r = parseFloat(ring.getAttribute('r') || '88');
+        const circumference = 2 * Math.PI * r;
+        const total = currentMode === 'work' ? currentWorkSessionSeconds : DEFAULT_BREAK_SECONDS;
+        const ratio = total > 0 ? Math.max(0, Math.min(1, timerSeconds / total)) : 0;
+        ring.style.strokeDasharray = circumference;
+        ring.style.strokeDashoffset = circumference * (1 - ratio);
+        ring.style.stroke = currentMode === 'work' ? 'var(--primary-color)' : 'var(--success-color)';
+    }
 }
 
 function queueSave() {
