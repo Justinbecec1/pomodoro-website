@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pomodoro Timer - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
@@ -12,7 +16,10 @@
     <nav class="navbar">
         <div class="navbar-container">
             <h1 class="navbar-brand">Pomodoro Timer</h1>
-            <div class="navbar-menu">
+            <button class="navbar-toggle" id="navbar-toggle" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="navbar-menu" id="navbar-menu">
                 <a href="dashboard.html" class="nav-link active">Dashboard</a>
                 <a href="timer.html" class="nav-link">Timer</a>
                 <a href="tasks.html" class="nav-link">Tasks</a>
@@ -32,8 +39,8 @@
 
         <!-- Dashboard Grid -->
         <div class="dashboard-grid">
-            <!-- Quick Stats -->
             <div class="stat-card">
+                <div class="stat-icon">🍅</div>
                 <div class="stat-content">
                     <h3>Today's Pomodoros</h3>
                     <p id="todays-pomodoros-stat" class="stat-number">0</p>
@@ -41,6 +48,7 @@
             </div>
 
             <div class="stat-card">
+                <div class="stat-icon">✅</div>
                 <div class="stat-content">
                     <h3>Tasks Completed</h3>
                     <p id="tasks-completed-stat" class="stat-number">0</p>
@@ -48,6 +56,7 @@
             </div>
 
             <div class="stat-card">
+                <div class="stat-icon">🔥</div>
                 <div class="stat-content">
                     <h3>Current Streak</h3>
                     <p class="stat-number">0 days</p>
@@ -58,18 +67,21 @@
         <!-- Main Features Section -->
         <div class="features-section">
             <div class="feature-card">
+                <div class="feature-icon">⏱️</div>
                 <h2>Start Timer</h2>
                 <p>Begin your work session or break</p>
                 <a href="timer.html" class="btn btn-primary">Go to Timer</a>
             </div>
 
             <div class="feature-card">
+                <div class="feature-icon">📋</div>
                 <h2>Manage Tasks</h2>
                 <p>Create and track your tasks</p>
                 <a href="tasks.html" class="btn btn-primary">Manage Tasks</a>
             </div>
 
             <div class="feature-card">
+                <div class="feature-icon">📈</div>
                 <h2>View Progress</h2>
                 <p>Track your productivity stats</p>
                 <a href="progress.html" class="btn btn-primary">View Progress</a>

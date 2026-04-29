@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pomodoro Timer - About Me</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
@@ -11,7 +15,10 @@
     <nav class="navbar">
         <div class="navbar-container">
             <h1 class="navbar-brand">Pomodoro Timer</h1>
-            <div class="navbar-menu">
+            <button class="navbar-toggle" id="navbar-toggle" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="navbar-menu" id="navbar-menu">
                 <a href="dashboard.html" class="nav-link">Dashboard</a>
                 <a href="timer.html" class="nav-link">Timer</a>
                 <a href="tasks.html" class="nav-link">Tasks</a>

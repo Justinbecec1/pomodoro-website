@@ -1,0 +1,24 @@
+/* ============================================
+   Shared Design Tokens
+   ============================================ */
+
+:root {
+    --primary-color: #7dbaf7;
+    --primary-strong: #5ba6f1;
+    --primary-soft: #eef7ff;
+    --success-color: #3bb58f;
+    --error-color: #d96b7b;
+    --warning-color: #e7b85c;
+    --light-bg: #f6fbff;
+    --card-bg: #ffffff;
+    --border-color: #d7e7f7;
+    --text-primary: #18324a;
+    --text-secondary: #5c7690;
+    --transition: all 0.2s ease;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --shadow-sm: 0 4px 12px rgba(122, 162, 201, 0.08);
+    --shadow-md: 0 16px 32px rgba(122, 162, 201, 0.10);
+    --shadow-lg: 0 24px 48px rgba(122, 162, 201, 0.14);
+}

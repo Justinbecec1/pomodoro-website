@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pomodoro Timer - Timer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/timer.css">
@@ -12,7 +16,10 @@
     <nav class="navbar">
         <div class="navbar-container">
             <h1 class="navbar-brand">Pomodoro Timer</h1>
-            <div class="navbar-menu">
+            <button class="navbar-toggle" id="navbar-toggle" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="navbar-menu" id="navbar-menu">
                 <a href="dashboard.html" class="nav-link">Dashboard</a>
                 <a href="timer.html" class="nav-link active">Timer</a>
                 <a href="tasks.html" class="nav-link">Tasks</a>
@@ -30,19 +37,25 @@
         </div>
 
         <div class="timer-panel" aria-live="polite">
-            <h2>Session Timer</h2>
             <p id="timer-mode-label" class="timer-mode-label">Work Session</p>
-            <p id="timer-display" class="timer-display">25:00</p>
+
+            <div class="timer-ring-wrapper">
+                <svg class="timer-ring" viewBox="0 0 200 200">
+                    <circle class="timer-ring-track" cx="100" cy="100" r="88"/>
+                    <circle class="timer-ring-progress" id="timer-ring-progress" cx="100" cy="100" r="88"/>
+                </svg>
+                <p id="timer-display" class="timer-display">25:00</p>
+            </div>
+
+            <div class="timer-mode-toggle">
+                <button id="timer-set-work" class="mode-btn active" type="button">Work</button>
+                <button id="timer-set-break" class="mode-btn" type="button">Break</button>
+            </div>
 
             <div class="timer-actions">
                 <button id="timer-start-pause" class="btn btn-primary" type="button">Start</button>
                 <button id="timer-plus-30" class="btn btn-secondary" type="button">+30s</button>
                 <button id="timer-reset" class="btn btn-secondary" type="button">Reset</button>
-            </div>
-
-            <div class="timer-mode-actions">
-                <button id="timer-set-work" class="btn btn-secondary" type="button">Work Time</button>
-                <button id="timer-set-break" class="btn btn-secondary" type="button">Break Time</button>
             </div>
 
             <div class="timer-input-row">
