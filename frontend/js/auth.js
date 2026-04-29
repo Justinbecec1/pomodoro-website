@@ -507,3 +507,37 @@ function requireAuth() {
     }
     return true;
 }
+
+/**
+ * Highlight the nav link matching the current page and wire hamburger menu
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    const current = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(link => {
+        const href = link.getAttribute('href');
+        link.classList.toggle('active', href === current);
+    });
+
+    const toggle = document.getElementById('navbar-toggle');
+    const menu = document.getElementById('navbar-menu');
+    if (toggle && menu) {
+        toggle.addEventListener('click', () => {
+            toggle.classList.toggle('open');
+            menu.classList.toggle('open');
+        });
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                toggle.classList.remove('open');
+                menu.classList.remove('open');
+            });
+        });
+    }
+
+    document.querySelectorAll('.toggle-password').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = btn.closest('.input-password-wrapper').querySelector('input');
+            input.type = input.type === 'password' ? 'text' : 'password';
+            btn.textContent = input.type === 'password' ? '👁' : '🙈';
+        });
+    });
+});
