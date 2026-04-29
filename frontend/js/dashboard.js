@@ -59,6 +59,10 @@ async function loadDashboardStats() {
         return;
     }
 
+    [pomodorosElement, tasksCompletedElement, currentStreakElement].forEach(el => {
+        if (el) el.classList.add('skeleton');
+    });
+
     try {
         const [timer, progressSummary, streakData] = await Promise.all([
             window.api.getTimer(token),
@@ -76,6 +80,9 @@ async function loadDashboardStats() {
             ? streakData.currentStreakDays
             : 0;
 
+        [pomodorosElement, tasksCompletedElement, currentStreakElement].forEach(el => {
+            if (el) el.classList.remove('skeleton');
+        });
         pomodorosElement.textContent = String(todaysPomodoros);
         if (tasksCompletedElement) {
             tasksCompletedElement.textContent = String(tasksCompleted);
@@ -90,6 +97,9 @@ async function loadDashboardStats() {
             return;
         }
 
+        [pomodorosElement, tasksCompletedElement, currentStreakElement].forEach(el => {
+            if (el) el.classList.remove('skeleton');
+        });
         const cached = readTimerCache();
         const todaysPomodoros = Number.isInteger(cached?.todaysPomodoros) ? cached.todaysPomodoros : 0;
 
