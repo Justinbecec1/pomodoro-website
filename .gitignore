@@ -7,3 +7,9 @@ backend/.env
 
 # Ignore macOS system files
 .DS_Store
+
+# Local dev only
+frontend/js/config.local.js
+
+# Personal files
+backend/src/utils/Finals\ transcript.json
