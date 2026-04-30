@@ -1,5 +1,5 @@
-// Production API endpoint for Netlify deployment.
-const API_BASE_URL = window.APP_API_BASE_URL || 'https://pomodoro-website.onrender.com';
+const _isLocal = ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname);
+const API_BASE_URL = window.APP_API_BASE_URL || (_isLocal ? 'http://localhost:3000/api' : 'https://pomodoro-website.onrender.com');
 
 async function request(path, options = {}) {
   const headers = {
